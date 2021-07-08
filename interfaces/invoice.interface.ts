@@ -1,4 +1,4 @@
-interface invoiceApiInterface {
+export interface invoiceApiInterface {
   id: string
   socid: string
   fk_project: string

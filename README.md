@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Statistiques de la cellule lyonnaise de Happy dev
+
+Connecté à l'api de dolibarr, outils libre et opensource pour gérer la trésorerie.  
 
 ## Getting Started
 

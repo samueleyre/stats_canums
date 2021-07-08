@@ -1,3 +1,4 @@
+import {invoiceApiInterface} from "../interfaces/invoice.interface";
 
 export class InvoiceEntity {
   id: string

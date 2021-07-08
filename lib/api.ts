@@ -2,6 +2,7 @@ import {projectApiInterface} from "../interfaces/project.interface";
 import {ProjectEntity} from "../entities/project.entity";
 import {moneyStatsInterface} from "../interfaces/stats.interface";
 import {InvoiceEntity} from "../entities/invoice.entity";
+import {invoiceApiInterface} from "../interfaces/invoice.interface";
 
 export async function fetchApi(path = '') {
 
