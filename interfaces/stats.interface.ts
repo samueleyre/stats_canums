@@ -6,9 +6,15 @@ export interface moneyStatsInterface {
   apportAffaireIncome: number
   brandIncome: number
   structureDetails: {
-    communityManagement: number
+    // communityManagement: number
+    // fonctionnement: number
     coworking: number
-    newsletter: number
-    fonctionnement: number
+    // newsletter: number
+    banque: number
+    hdParis: number
+    maif: number
+    communication: number
+    hd: number
+    visio: number
   }
 }

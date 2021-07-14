@@ -3,6 +3,9 @@ import {ProjectEntity} from "../entities/project.entity";
 import {moneyStatsInterface} from "../interfaces/stats.interface";
 import {InvoiceEntity} from "../entities/invoice.entity";
 import {invoiceApiInterface} from "../interfaces/invoice.interface";
+import {structureProjetIds, structureProjets, structureThirdParties, structureThirdPartiesIds} from "@/lib/const";
+import {SupplierInvoiceEntity} from "../entities/supplierInvoice.entity";
+import {supplierInvoiceApiInterface} from "../interfaces/supplierInvoice.interface";
 
 export async function fetchApi(path = '') {
 
@@ -24,41 +27,15 @@ export async function fetchApi(path = '') {
     return json;
 }
 
-const communityManagementProjet = {
-    id: "22",
-    title: "Community Management Tuba"
-}
-const coworking2021Projet = {
-    id: "57",
-    title: "Coworking"
-}
-const newsletter2020Projet = {
-    id: "23",
-    title: "Newsletter 2020"
-}
-const fonctionnement2020Projet = {
-    id: "24",
-    title: "Fonctionnement"
-}
-const fonctionnement2021Projet = {
-    id: "58",
-    title: "Fonctionnement"
-}
-
-const structureProjetIds = [
-  communityManagementProjet.id,
-  coworking2021Projet.id,
-  newsletter2020Projet.id,
-  fonctionnement2020Projet.id,
-  fonctionnement2021Projet.id,
-]
 
 export async function getStats(): Promise<moneyStatsInterface> {
     const projets = await fetchProjects();
     const invoices = await fetchInvoices();
+    const supplierInvoices = await fetchSupplierInvoices();
 
     const invoicesIndep = invoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) === -1);
     const invoicesStructure = invoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) !== -1);
+    const spendingStructure = supplierInvoices.filter(sinv => structureThirdPartiesIds.indexOf(sinv.fk_soc) !== -1);
 
     // complete invoices
     invoicesIndep.map((inv) => {
@@ -96,16 +73,37 @@ export async function getStats(): Promise<moneyStatsInterface> {
               return total + inv.total_ht*inv.pourcentmarquehd;
           }, 0)),
         structureDetails : {
-            communityManagement: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === communityManagementProjet.id).reduce((total, inv) => {
+            // communityManagement: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.communityManagementProjet).reduce((total, inv) => {
+            //     return total + inv.total_ht;
+            // }, 0)),
+            // coworking: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.coworking2021Projet).reduce((total, inv) => {
+            //     return total + inv.total_ht;
+            // }, 0)),
+            // newsletter: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.newsletter2020Projet).reduce((total, inv) => {
+            //     return total + inv.total_ht;
+            // }, 0)),
+            // fonctionnement: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.fonctionnement2020Projet || inv.fk_project === structureProjets.fonctionnement2021Projet).reduce((total, inv) => {
+            //     return total + inv.total_ht;
+            // }, 0)),
+            banque: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.banque).reduce((total, inv) => {
                 return total + inv.total_ht;
             }, 0)),
-            coworking: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === coworking2021Projet.id).reduce((total, inv) => {
+            maif: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.maif).reduce((total, inv) => {
                 return total + inv.total_ht;
             }, 0)),
-            newsletter: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === newsletter2020Projet.id).reduce((total, inv) => {
+            hd: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.hd).reduce((total, inv) => {
                 return total + inv.total_ht;
             }, 0)),
-            fonctionnement: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === fonctionnement2020Projet.id || inv.fk_project === fonctionnement2021Projet.id).reduce((total, inv) => {
+            hdParis: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.hdParis).reduce((total, inv) => {
+                return total + inv.total_ht;
+            }, 0)),
+            communication: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.communication).reduce((total, inv) => {
+                return total + inv.total_ht;
+            }, 0)),
+            visio: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.visio).reduce((total, inv) => {
+                return total + inv.total_ht;
+            }, 0)),
+            coworking: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.coworking).reduce((total, inv) => {
                 return total + inv.total_ht;
             }, 0)),
         }
@@ -124,10 +122,18 @@ export async function fetchInvoices() {
     return mapInvoices(await fetchApi("invoices?sortfield=t.rowid&sortorder=ASC&limit=100"));
 }
 
+export async function fetchSupplierInvoices() {
+    return mapSupplierInvoices(await fetchApi("supplierinvoices?sortfield=t.rowid&sortorder=ASC&limit=100"));
+}
+
 export function mapProjects(projects: projectApiInterface[]) : ProjectEntity[] {
     return projects.map((project) => new ProjectEntity(project))
 }
 
 export function mapInvoices(invoices: invoiceApiInterface[]) : InvoiceEntity[] {
     return invoices.map((invoice) => new InvoiceEntity(invoice)).filter(inv=> inv.paye === "1" && inv.creation_year === Number(process.env.YEAR))
+}
+
+export function mapSupplierInvoices(invoices: supplierInvoiceApiInterface[]) : SupplierInvoiceEntity[] {
+    return invoices.map((invoice) => new SupplierInvoiceEntity(invoice)).filter(inv=> inv.paid === "1" && inv.creation_year === Number(process.env.YEAR))
 }
