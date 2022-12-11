@@ -6,13 +6,15 @@ import {Component} from "react";
 
 
 
-export default class Home extends Component {
+export default class Home extends Component<{}, {year: number, allStatsInYear: moneyStatsInterface}> {
 
-  constructor({ allStats }: { allStats : {[key: int]: moneyStatsInterface} }) {
+  years;
+  allStats;
+
+  constructor({ allStats }: { allStats : {[key: number]: moneyStatsInterface} }) {
       super({ allStats });
       const year = new Date().getFullYear()
       this.years = Object.keys(allStats).map((year) => Number(year));
-      console.log(this.years)
       this.allStats = allStats;
       this.state = {
         year,

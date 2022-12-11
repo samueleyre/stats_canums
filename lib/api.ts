@@ -28,13 +28,12 @@ export async function fetchApi(path = '') {
 }
 
 
-export async function getStats(): Promise<moneyStatsInterface> {
+export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> {
     const projets = await fetchProjects();
 
     const ret = {};
-    for (let year of process.env.YEARS.split(",")) {
+    for (let year of process.env.YEARS.split(",").map(Number)) {
 
-      year = Number(year)
       const invoices = await fetchInvoicesByYear(year);
       const supplierInvoices = await fetchSupplierInvoicesByYear(year);
 
@@ -146,14 +145,14 @@ export function mapProjects(projects: projectApiInterface[]) : ProjectEntity[] {
 
 export function mapInvoices(
   invoices: invoiceApiInterface[],
-  year: int
+  year: number
 ) : InvoiceEntity[] {
     return invoices.map((invoice) => new InvoiceEntity(invoice)).filter(inv=> inv.paye === "1" && inv.creation_year === year)
 }
 
 export function mapSupplierInvoices(
   invoices: supplierInvoiceApiInterface[],
-  year: int
+  year: number
 ) : SupplierInvoiceEntity[] {
     return invoices.map((invoice) => new SupplierInvoiceEntity(invoice)).filter(inv=> inv.paid === "1" && inv.creation_year === year)
 }
