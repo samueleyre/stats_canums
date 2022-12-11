@@ -14,3 +14,10 @@ a {
 * {
   box-sizing: border-box;
 }
+
+button.selected {
+  border: none;
+  border-radius: 3px;
+  background-color: orangered;
+  color: white;
+}
