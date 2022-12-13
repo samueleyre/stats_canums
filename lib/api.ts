@@ -3,9 +3,11 @@ import {ProjectEntity} from "../entities/project.entity";
 import {moneyStatsInterface} from "../interfaces/stats.interface";
 import {InvoiceEntity} from "../entities/invoice.entity";
 import {invoiceApiInterface} from "../interfaces/invoice.interface";
-import {structureProjetIds, structureProjets, structureThirdParties, structureThirdPartiesIds} from "@/lib/const";
+import {structureProjetIds, structureProjets, structureThirdParties, structureThirdPartiesIds, treasury2020} from "@/lib/const";
 import {SupplierInvoiceEntity} from "../entities/supplierInvoice.entity";
 import {supplierInvoiceApiInterface} from "../interfaces/supplierInvoice.interface";
+import { ThirdPartieEntity} from "../entities/thirdPartie.entity";
+import {thirdPartieInterface} from "../interfaces/thirdPartie.interface";
 
 export async function fetchApi(path = '') {
 
@@ -29,20 +31,47 @@ export async function fetchApi(path = '') {
 
 
 export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> {
-    const projets = await fetchProjects();
+    const current_year = new Date().getFullYear()
 
-    const ret = {};
+    const projets = await fetchProjects();
+    const allInvoices = (await fetchInvoices()).filter(invoice => invoice.statut !== "0");
+    const allSupplierInvoices = (await fetchSupplierInvoices()).filter(invoice => invoice.statut !== "0");
+    const thirdparties = await fetchThirdParties();
+
+    const allInvoicesUnpaid = allInvoices.filter(invoice => invoice.statut === "1");
+    const allSupplierInvoicesUnpaid = allSupplierInvoices.filter(supInvoice => supInvoice.statut === "1");
+
+
+    const ret = {
+      2020: {
+        structure: {
+          realTreasury: treasury2020
+        }
+      }
+    };
+    // Calculate stats per year
     for (let year of process.env.YEARS.split(",").map(Number)) {
 
-      const invoices = await fetchInvoicesByYear(year);
-      const supplierInvoices = await fetchSupplierInvoicesByYear(year);
 
-      const invoicesIndep = invoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) === -1);
-      const invoicesStructure = invoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) !== -1);
-      const spendingStructure = supplierInvoices.filter(sinv => structureThirdPartiesIds.indexOf(sinv.fk_soc) !== -1);
 
-      // complete invoices
-      invoicesIndep.map((inv) => {
+      // By Year
+      const invoices = allInvoices.filter(invoice => invoice.creation_year === year);
+      const supplierInvoices = allSupplierInvoices.filter(supInvoice => supInvoice.creation_year === year).map((supInv) => {
+        // find thirdPartie
+        const foundThirdPartie = thirdparties.find(thirdPartie => thirdPartie.id === supInv.fk_soc);
+        if (!foundThirdPartie) {
+            console.error(`ThirdPartie of SupplierInvoice ${supInv.id} not found !! 🧨`)
+        }
+        supInv.thirdPartieTypentCode = foundThirdPartie.typent_code;
+        return supInv;
+      })
+
+      // Has been paid
+      const paidInvoices = invoices.filter(invoice => invoice.paye === "1");
+      const paidSupplierInvoices = supplierInvoices.filter(supInvoice => supInvoice.paid === "1");
+
+      // Freelances
+      const invoicesIndep = invoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) === -1).map((inv) => {
           // find projets
           const foundProjet = projets.find(pro => pro.id === inv.fk_project);
           if (!foundProjet) {
@@ -54,105 +83,161 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
           inv.pourcentcapitaine = foundProjet.array_options.options_pourcentcapitaine ? Number(foundProjet.array_options.options_pourcentcapitaine) / 100 : 0
           return inv;
       })
+      const paidInvoicesIndep = paidInvoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) === -1);
+
+      // Structure related
+      const expensesStructure = supplierInvoices.filter(sinv => structureThirdPartiesIds.indexOf(sinv.fk_soc) !== -1);
+      const freelanceSupplierInvoices = supplierInvoices.filter(sinv => sinv.thirdPartieTypentCode === "TE_FREELANCE");
+
+      console.log(freelanceSupplierInvoices.reduce((total, inv) => {
+        return total + inv.total_ht;
+      }, 0))
+
+      // stats
+      const countFreelanceSupplierInvoices = freelanceSupplierInvoices.length;
+      const countFreelanceWithSupplierInvoices = freelanceSupplierInvoices.map(sinv => sinv.fk_soc).filter((fk_soc, ind, arr) => arr.indexOf(fk_soc) === ind).length;
+
+      const reelTotalStructureExpenses = supplierInvoices.filter(sinv => sinv.thirdPartieTypentCode !== "TE_FREELANCE").reduce((total, inv) => {
+        return total + inv.total_ht;
+      }, 0);
+
+      // for verification
+      const totalStructureExpenses = Math.trunc(expensesStructure.filter(inv => structureThirdPartiesIds.indexOf(inv.fk_soc) !== -1).reduce((total, inv) => {
+        return total + inv.total_ht;
+      }, 0));
+
+      if (reelTotalStructureExpenses !== totalStructureExpenses) {
+        console.error(`Something is missing in the ids of the expenses real total expenses : ${reelTotalStructureExpenses} is different from the sum of all expenses : ${totalStructureExpenses} 🦊`)
+      }
+
+      const projectsIncomeProjectedTotal = invoicesIndep.reduce((total,inv) => {
+        return total + inv.total_ht;
+      }, 0);
+      const distributionProjectedCapitaine = Math.trunc(invoicesIndep
+        .reduce((total,inv) => {
+          return total + inv.total_ht*inv.pourcentcapitaine;
+      }, 0));
+      const distributionProjectedApportAffaire = Math.trunc(invoicesIndep
+        .reduce((total,inv) => {
+            return total + inv.total_ht*inv.pourcentapportaffaire;
+        }, 0));
+      const distributionProjectedBrand = Math.trunc(invoicesIndep
+        .reduce((total,inv) => {
+            return total + inv.total_ht*inv.pourcentmarquehd;
+        }, 0));
+      const celluleIncomeProjected = Math.trunc(invoicesIndep
+        .reduce((total,inv) => {
+          return total + inv.total_ht*inv.pourcentcellule;
+      }, 0));
+      const celluleIncomePaid = Math.trunc(paidInvoicesIndep
+        .reduce((total,inv) => {
+          return total + inv.total_ht*inv.pourcentcellule;
+      }, 0));
+
+      const distributionFreelancesTotal = projectsIncomeProjectedTotal - distributionProjectedCapitaine - distributionProjectedApportAffaire - distributionProjectedBrand - celluleIncomeProjected;
+      const taxes = (celluleIncomePaid - reelTotalStructureExpenses) * 15.5 / 100;
 
       const stats = {
-          projectsIncome: invoicesIndep
-            .reduce((total,inv) => {
-              return total + inv.total_ht;
-          }, 0),
-          capitaineIncome: Math.trunc(invoicesIndep
-            .reduce((total,inv) => {
-              return total + inv.total_ht*inv.pourcentcapitaine;
-          }, 0)),
-          celluleIncome: Math.trunc(invoicesIndep
-            .reduce((total,inv) => {
-                return total + inv.total_ht*inv.pourcentcellule;
-            }, 0)),
-          apportAffaireIncome: Math.trunc(invoicesIndep
-            .reduce((total,inv) => {
-                return total + inv.total_ht*inv.pourcentapportaffaire;
-            }, 0)),
-          brandIncome: Math.trunc(invoicesIndep
-            .reduce((total,inv) => {
-                return total + inv.total_ht*inv.pourcentmarquehd;
-            }, 0)),
-          structureDetails : {
-              // communityManagement: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.communityManagementProjet).reduce((total, inv) => {
-              //     return total + inv.total_ht;
-              // }, 0)),
-              // coworking: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.coworking2021Projet).reduce((total, inv) => {
-              //     return total + inv.total_ht;
-              // }, 0)),
-              // newsletter: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.newsletter2020Projet).reduce((total, inv) => {
-              //     return total + inv.total_ht;
-              // }, 0)),
-              // fonctionnement: Math.trunc(invoicesStructure.filter(inv => inv.fk_project === structureProjets.fonctionnement2020Projet || inv.fk_project === structureProjets.fonctionnement2021Projet).reduce((total, inv) => {
-              //     return total + inv.total_ht;
-              // }, 0)),
-              banque: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.banque).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
-              maif: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.maif).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
-              hd: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.hd).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
-              hdParis: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.hdParis).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
-              communication: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.communication).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
-              visio: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.visio).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
-              coworking: Math.trunc(spendingStructure.filter(inv => inv.fk_soc === structureThirdParties.coworking).reduce((total, inv) => {
-                  return total + inv.total_ht;
-              }, 0)),
+          projectsIncome: {
+            projected: {
+              total: projectsIncomeProjectedTotal,
+              invoiceCount: invoicesIndep.length
+            },
+            paid: {
+              total: paidInvoices.reduce((total,inv) => {
+                return total + inv.total_ht;
+                }, 0),
+              invoiceCount: paidInvoices.length
+            },
+            unpaid: {
+              total: allInvoicesUnpaid.reduce((total, inv) => {
+                return total + inv.total_ht;
+              }, 0),
+              invoiceCount: allInvoicesUnpaid.length
+            }
+          },
+          distributionProjected: {
+            capitaine: distributionProjectedCapitaine,
+            apportAffaire: distributionProjectedApportAffaire,
+            brand: distributionProjectedBrand,
+            freelances: {
+              total: distributionFreelancesTotal,
+              countInvoices: countFreelanceSupplierInvoices,
+              countFreelances: countFreelanceWithSupplierInvoices,
+              averagePerFreelance: countFreelanceWithSupplierInvoices > 0 ? Math.trunc(distributionFreelancesTotal / countFreelanceWithSupplierInvoices) : 0
+            }
+          },
+          structure : {
+              income: {
+                projected: celluleIncomeProjected,
+                paid: celluleIncomePaid,
+              },
+              expenses: {
+                reelTotal: reelTotalStructureExpenses,
+                detail: {
+                  banque: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.banque).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                  maif: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.maif).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                  hd: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.hd).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                  hdParis: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.hdParis).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                  communication: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.communication).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                  visio: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.visio).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                  coworking: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.coworking).reduce((total, inv) => {
+                      return total + inv.total_ht;
+                  }, 0)),
+                }
+              },
+              taxes: Math.trunc(taxes),
+              realTreasury : Math.trunc(celluleIncomePaid - reelTotalStructureExpenses - taxes + ret[(year-1)].structure.realTreasury)
           }
       };
-      ret[year] = {
-          ...stats,
-          indepIncome: stats.projectsIncome - stats.celluleIncome - stats.capitaineIncome - stats.apportAffaireIncome - stats.brandIncome
-      }
+      ret[year] = stats;
     }
     console.log(ret)
+    console.log(ret[2022])
     return ret;
 }
 
 export async function fetchProjects() {
-    return mapProjects(await fetchApi("projects?sortfield=t.rowid&sortorder=ASC&limit=100"));
+    return mapProjects(await fetchApi("projects?sortfield=t.rowid&sortorder=ASC&limit=3000"));
 }
 
-export async function fetchInvoicesByYear(year) {
-    return mapInvoices(
-      await fetchApi("invoices?sortfield=t.rowid&sortorder=ASC&limit=100"),
-      year
-    );
+export async function fetchThirdParties() {
+    return mapThirdParties(await fetchApi("thirdparties?sortfield=t.rowid&sortorder=ASC&limit=3000"));
 }
 
-export async function fetchSupplierInvoicesByYear(year) {
-    return mapSupplierInvoices(
-      await fetchApi("supplierinvoices?sortfield=t.rowid&sortorder=ASC&limit=100"),
-      year
-    );
+export async function fetchInvoices() {
+    return mapInvoices(await fetchApi("invoices?sortfield=t.rowid&sortorder=ASC&limit=3000"));
 }
+
+export async function fetchSupplierInvoices() {
+    return mapSupplierInvoices(await fetchApi("supplierinvoices?sortfield=t.rowid&sortorder=ASC&limit=3000"));
+}
+
 
 export function mapProjects(projects: projectApiInterface[]) : ProjectEntity[] {
     return projects.map((project) => new ProjectEntity(project))
 }
 
-export function mapInvoices(
-  invoices: invoiceApiInterface[],
-  year: number
-) : InvoiceEntity[] {
-    return invoices.map((invoice) => new InvoiceEntity(invoice)).filter(inv=> inv.paye === "1" && inv.creation_year === year)
+export function mapInvoices(invoices: invoiceApiInterface[]) : InvoiceEntity[] {
+    return invoices.map((invoice) => new InvoiceEntity(invoice))
 }
 
-export function mapSupplierInvoices(
-  invoices: supplierInvoiceApiInterface[],
-  year: number
-) : SupplierInvoiceEntity[] {
-    return invoices.map((invoice) => new SupplierInvoiceEntity(invoice)).filter(inv=> inv.paid === "1" && inv.creation_year === year)
+export function mapSupplierInvoices(invoices: supplierInvoiceApiInterface[]) : SupplierInvoiceEntity[] {
+    return invoices.map((invoice) => new SupplierInvoiceEntity(invoice))
+}
+
+export function mapThirdParties(invoices: thirdPartieInterface[]) : ThirdPartieEntity[] {
+    return invoices.map((invoice) => new ThirdPartieEntity(invoice))
 }

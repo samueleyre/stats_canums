@@ -7,6 +7,9 @@ export class SupplierInvoiceEntity {
   datec: number
   total_ht: number
   paid: "1" | "0"
+  statut: "0"|"1"|"2"|"3" // draft | unpaid | paid | cancelled
+  thirdPartieTypentCode?: "TE_MEDIUM" | "TE_SMALL" | "TE_FREELANCE" | "TE_ADMIN" | "TE_OTHER"
+
 
   constructor(object: supplierInvoiceApiInterface) {
 
@@ -25,6 +28,9 @@ export class SupplierInvoiceEntity {
     }
     if ('paid' in object) {
       this.paid = object.paid;
+    }
+    if ('statut' in object) {
+      this.statut = object.statut;
     }
   }
 }

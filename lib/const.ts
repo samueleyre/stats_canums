@@ -1,5 +1,5 @@
 
-export const structureProjets = {
+export const structureProjets = { // this is old
   communityManagementProjet: "22",
   coworking2021Projet: "57",
   newsletter2020Projet: "23",
@@ -20,3 +20,5 @@ export const structureThirdParties = {
 }
 
 export const structureThirdPartiesIds = Object.values(structureThirdParties);
+
+export const treasury2020 = 0;

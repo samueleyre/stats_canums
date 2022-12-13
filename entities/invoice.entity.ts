@@ -14,7 +14,7 @@ export class InvoiceEntity {
   remise_percent: string
   total_ht: number
   paye: "1" | "0"
-  statut: string
+  statut: "0"|"1"|"2"|"3" // draft | unpaid | paid | cancelled
   totalpaid: string
   remaintopay: string
   pourcentcapitaine?: number

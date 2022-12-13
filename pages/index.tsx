@@ -10,12 +10,14 @@ export default class Home extends Component<{}, {year: number, allStatsInYear: m
 
   years;
   allStats;
+  currentYear;
 
   constructor({ allStats }: { allStats : {[key: number]: moneyStatsInterface} }) {
       super({ allStats });
       const year = new Date().getFullYear()
       this.years = Object.keys(allStats).map((year) => Number(year));
       this.allStats = allStats;
+      this.currentYear = year;
       this.state = {
         year,
         allStatsInYear : allStats[year]
@@ -56,111 +58,157 @@ export default class Home extends Component<{}, {year: number, allStatsInYear: m
             Les Canumériques en chiffres
           </h1>
           <div className={styles.yearsContainer} >
-            {this.years.map((year_it, index) =>
-              <button className={`year ${(year === year_it )? "selected" : "" }`} data-year={year_it} onClick={() => this.changeDate(year_it)}>{year_it}</button>
-            )}
+            {
+              this.years.map((year_it, index) => {
+                if (year_it > 2020) { // todo: this should be in env
+                  return <button className={`year ${(year === year_it )? "selected" : "" }`} data-year={year_it} onClick={() => this.changeDate(year_it)}>{year_it}</button>
+                }
+              })
+            }
           </div>
+          <h2>Revenus</h2>
           <div className={styles.statContainer}>
-            <div className={styles.stat}>
-              <p className={styles.statTitle}>Chiffre d'affaire</p>
-              <p className={styles.statNumber}>{allStatsInYear.projectsIncome}</p>
-            </div>
+            {
+              year === this.currentYear ?
+              <div className={styles.stat}>
+                <p className={styles.statTitle}>Chiffre d'affaire prévisionnel </p>
+                <p className={styles.statNumber}>{allStatsInYear.projectsIncome.projected.total}</p>
+                <p className={styles.statNumber}>{allStatsInYear.projectsIncome.projected.invoiceCount} factures</p>
+              </div> : ""
+            }
+            {
+              year <= this.currentYear ?
+              <div className={styles.stat}>
+                <p className={styles.statTitle}>Chiffre d'affaire encaissé </p>
+                <p className={styles.statNumber}>{allStatsInYear.projectsIncome.paid.total}</p>
+                <p className={styles.statNumber}>{allStatsInYear.projectsIncome.paid.invoiceCount} factures</p>
+              </div> : ""
+            }
+            {
+              year >= this.currentYear ?
+              <div className={styles.stat}>
+                <p className={styles.statTitle}>En attente de paiement</p>
+                <p className={styles.statNumber}>{allStatsInYear.projectsIncome.unpaid.total}</p>
+                <p className={styles.statNumber}>{allStatsInYear.projectsIncome.unpaid.invoiceCount} factures</p>
+              </div> : ""
+            }
           </div>
-          <h2>Où va l'argent ?</h2>
+          <h2>Distribution</h2>
           <div className={styles.statContainer}>
-            <div className={styles.stat}>
-              <p className={styles.statTitle}>Les indépendants</p>
-              <p className={styles.statNumber}>{allStatsInYear.indepIncome}</p>
-            </div>
-            <div className={styles.stat}>
-              <p className={styles.statTitle}>La cellule lyonnaise</p>
-              <p className={styles.statNumber}>{allStatsInYear.celluleIncome}</p>
-            </div>
             <div className={styles.stat}>
               <p className={styles.statTitle}>Les Capitaines</p>
-              <p className={styles.statNumber}>{allStatsInYear.capitaineIncome}</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.capitaine}</p>
             </div>
             <div className={styles.stat}>
               <p className={styles.statTitle}>Les apporteurs d'affaires</p>
-              <p className={styles.statNumber}>{allStatsInYear.apportAffaireIncome}</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.apportAffaire}</p>
             </div>
             <div className={styles.stat}>
               <p className={styles.statTitle}>La marque Happy Dev</p>
-              <p className={styles.statNumber}>{allStatsInYear.brandIncome}</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.brand}</p>
             </div>
           </div>
-          <h2>Les dépenses de la structure</h2>
+          <h3>Les indépendants</h3>
           <div className={styles.statContainer}>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Chiffre d'affaire prévisionnel</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.freelances.total}</p>
+            </div>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Nombre de factures concernées</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.freelances.countInvoices}</p>
+            </div>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Nombre de freelances concernés</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.freelances.countFreelances}</p>
+            </div>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Revenu moyen du freelance</p>
+              <p className={styles.statNumber}>{allStatsInYear.distributionProjected.freelances.averagePerFreelance}</p>
+            </div>
+
+          </div>
+
+          <h2>Les canumériques</h2>
+          <div className={styles.statContainer}>
+          {
+            year <= this.currentYear ?
+              <div className={styles.stat}>
+                <p className={styles.statTitle}>Revenus prévisionnel</p>
+                <p className={styles.statNumber}>{allStatsInYear.structure.income.projected}</p>
+              </div> : ""
+          }
+          {
+            year > this.currentYear ?
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Revenus encaissés</p>
+              <p className={styles.statNumber}>{allStatsInYear.structure.income.paid}</p>
+            </div> : ""
+          }
+          </div>
+          <h3>Charges réelles</h3>
+          <div className={styles.statContainer}>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Total</p>
+              <p className={styles.statNumber}>{allStatsInYear.structure.expenses.reelTotal}</p>
+            </div>
+
             {
-              allStatsInYear.structureDetails.coworking ?
+              allStatsInYear.structure.expenses.detail.coworking ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Bureaux</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structureDetails.coworking}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.coworking}</p>
                 </div> : ""
             }
             {
-              allStatsInYear.structureDetails.banque ?
+              allStatsInYear.structure.expenses.detail.banque ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Banque</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structureDetails.banque}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.banque}</p>
                 </div> : ""
             }
             {
-              allStatsInYear.structureDetails.maif ?
+              allStatsInYear.structure.expenses.detail.maif ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Assurance</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structureDetails.maif}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.maif}</p>
                 </div> : ""
             }
             {
-              allStatsInYear.structureDetails.visio ?
+              allStatsInYear.structure.expenses.detail.visio ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Outil de visio</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structureDetails.visio}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.visio}</p>
                 </div> : ""
             }
             {
-              allStatsInYear.structureDetails.communication ?
+              allStatsInYear.structure.expenses.detail.communication ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Communication</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structureDetails.communication}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.communication}</p>
                 </div> : ""
             }
             {
-              allStatsInYear.structureDetails.coworking ?
+              allStatsInYear.structure.expenses.detail.coworking ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Bureaux</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structureDetails.coworking}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.coworking}</p>
                 </div> : ""
             }
-            {/*{*/}
-            {/*  allStatsInYear.structureDetails.communityManagement ?*/}
-            {/*    <div className={styles.stat}>*/}
-            {/*      <p className={styles.statTitle}>Community Management du coworking</p>*/}
-            {/*      <p className={styles.statNumber}>{allStatsInYear.structureDetails.communityManagement}</p>*/}
-            {/*    </div> : ""*/}
-            {/*}*/}
-            {/*{*/}
-            {/*  allStatsInYear.structureDetails.coworking ?*/}
-            {/*    <div className={styles.stat}>*/}
-            {/*      <p className={styles.statTitle}>Frais de bureau</p>*/}
-            {/*      <p className={styles.statNumber}>{allStatsInYear.structureDetails.coworking}</p>*/}
-            {/*    </div> : ""*/}
-            {/*}*/}
-            {/*{*/}
-            {/*  allStatsInYear.structureDetails.fonctionnement ?*/}
-            {/*    <div className={styles.stat}>*/}
-            {/*      <p className={styles.statTitle}>Frais de fonctionnement</p>*/}
-            {/*      <p className={styles.statNumber}>{allStatsInYear.structureDetails.fonctionnement}</p>*/}
-            {/*    </div> : ""*/}
-            {/*}*/}
-            {/*{*/}
-            {/*  allStatsInYear.structureDetails.newsletter ?*/}
-            {/*    <div className={styles.stat}>*/}
-            {/*      <p className={styles.statTitle}>Newsletter</p>*/}
-            {/*      <p className={styles.statNumber}>{allStatsInYear.structureDetails.newsletter}</p>*/}
-            {/*    </div> : ""*/}
-            {/*}*/}
+          </div>
+          <h3>Taxes</h3>
+          <div className={styles.statContainer}>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Total</p>
+              <p className={styles.statNumber}>{allStatsInYear.structure.taxes}</p>
+            </div>
+          </div>
+          <h3>Trésorerie Réelle</h3>
+          <div className={styles.statContainer}>
+            <div className={styles.stat}>
+              <p className={styles.statTitle}>Total</p>
+              <p className={styles.statNumber}>{allStatsInYear.structure.realTreasury}</p>
+            </div>
           </div>
 
 
