@@ -3,7 +3,7 @@ import {ProjectEntity} from "../entities/project.entity";
 import {moneyStatsInterface} from "../interfaces/stats.interface";
 import {InvoiceEntity} from "../entities/invoice.entity";
 import {invoiceApiInterface} from "../interfaces/invoice.interface";
-import {structureProjetIds, structureProjets, structureThirdParties, structureThirdPartiesIds, treasury2020} from "@/lib/const";
+import {structureProjetIds, structureProjets, structureThirdParties, structureThirdPartiesIds, treasury2020, structureExpensesThirdParties} from "@/lib/const";
 import {SupplierInvoiceEntity} from "../entities/supplierInvoice.entity";
 import {supplierInvoiceApiInterface} from "../interfaces/supplierInvoice.interface";
 import { ThirdPartieEntity} from "../entities/thirdPartie.entity";
@@ -49,20 +49,33 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
         }
       }
     };
+
     // Calculate stats per year
     for (let year of process.env.YEARS.split(",").map(Number)) {
 
-
-
       // By Year
       const invoices = allInvoices.filter(invoice => invoice.creation_year === year);
-      const supplierInvoices = allSupplierInvoices.filter(supInvoice => supInvoice.creation_year === year).map((supInv) => {
+      const supplierInvoices = allSupplierInvoices.filter(supInv => supInv.creation_year === year).map((supInv) => {
+
+        // find projets
+        const foundProjet = projets.find(pro => pro.id === supInv.fk_project);
+        if (!foundProjet) {
+            console.error(`Projet of supplier invoice ${supInv.id} not found !! 🧨`)
+        }
+
         // find thirdPartie
         const foundThirdPartie = thirdparties.find(thirdPartie => thirdPartie.id === supInv.fk_soc);
         if (!foundThirdPartie) {
             console.error(`ThirdPartie of SupplierInvoice ${supInv.id} not found !! 🧨`)
         }
-        supInv.thirdPartieTypentCode = foundThirdPartie.typent_code;
+
+        supInv.clientId = foundProjet.socid
+        supInv.isFreelance = foundProjet.array_options.options_pourcentcellule > 0 || foundProjet.socid !== null ? true : false
+
+        // if (!supInv.isFreelance) {
+        //   console.log(` name of project: ${foundProjet.title} with id ${foundProjet.id} is freelance ${supInv.isFreelance} and with thirdpartie : ${foundThirdPartie.id} ${foundThirdPartie.name} ${foundThirdPartie.name_alias}`)
+        // }
+
         return supInv;
       })
 
@@ -86,29 +99,19 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
       const paidInvoicesIndep = paidInvoices.filter(inv => structureProjetIds.indexOf(inv.fk_project) === -1);
 
       // Structure related
-      const expensesStructure = supplierInvoices.filter(sinv => structureThirdPartiesIds.indexOf(sinv.fk_soc) !== -1);
-      const freelanceSupplierInvoices = supplierInvoices.filter(sinv => sinv.thirdPartieTypentCode === "TE_FREELANCE");
-
-      console.log(freelanceSupplierInvoices.reduce((total, inv) => {
-        return total + inv.total_ht;
-      }, 0))
+      const expensesStructure = supplierInvoices.filter(sinv => !sinv.isFreelance);
+      const freelanceSupplierInvoices = supplierInvoices.filter(sinv => sinv.isFreelance);
 
       // stats
       const countFreelanceSupplierInvoices = freelanceSupplierInvoices.length;
       const countFreelanceWithSupplierInvoices = freelanceSupplierInvoices.map(sinv => sinv.fk_soc).filter((fk_soc, ind, arr) => arr.indexOf(fk_soc) === ind).length;
 
-      const reelTotalStructureExpenses = supplierInvoices.filter(sinv => sinv.thirdPartieTypentCode !== "TE_FREELANCE").reduce((total, inv) => {
+      console.log(freelanceSupplierInvoices.map(sinv => sinv.fk_soc).filter((fk_soc, ind, arr) => arr.indexOf(fk_soc) === ind))
+
+      // reel expense : total of supplier invoices linked to project with no percent to structure
+      const reelTotalStructureExpenses = expensesStructure.reduce((total, inv) => {
         return total + inv.total_ht;
       }, 0);
-
-      // for verification
-      const totalStructureExpenses = Math.trunc(expensesStructure.filter(inv => structureThirdPartiesIds.indexOf(inv.fk_soc) !== -1).reduce((total, inv) => {
-        return total + inv.total_ht;
-      }, 0));
-
-      if (reelTotalStructureExpenses !== totalStructureExpenses) {
-        console.error(`Something is missing in the ids of the expenses real total expenses : ${reelTotalStructureExpenses} is different from the sum of all expenses : ${totalStructureExpenses} 🦊`)
-      }
 
       const projectsIncomeProjectedTotal = invoicesIndep.reduce((total,inv) => {
         return total + inv.total_ht;
@@ -136,6 +139,40 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
 
       const distributionFreelancesTotal = projectsIncomeProjectedTotal - distributionProjectedCapitaine - distributionProjectedApportAffaire - distributionProjectedBrand - celluleIncomeProjected;
       const taxes = (celluleIncomePaid - reelTotalStructureExpenses) * 15.5 / 100;
+
+      const verifyFreelanceDistributionWithSupplierInvoices = freelanceSupplierInvoices.reduce((total, inv) => {
+        return total + inv.total_ht;
+      }, 0)
+
+      // for information
+      if (distributionFreelancesTotal !== verifyFreelanceDistributionWithSupplierInvoices) {
+        console.log(`Difference between sum distribution of freelances calculated with invoices : ${distributionFreelancesTotal} and with supplier invoices : ${verifyFreelanceDistributionWithSupplierInvoices} ⌛`)
+        if (distributionFreelancesTotal < verifyFreelanceDistributionWithSupplierInvoices) {
+          console.error(`Freelances have received money before the canums received it ! 🧨`)
+        }
+      }
+
+      // structure expenses details
+      const strutureExpensesDetails = {};
+      Object.keys(structureExpensesThirdParties).forEach(exp => {
+          strutureExpensesDetails[exp] = Math.trunc(
+            expensesStructure.filter(
+              inv => structureExpensesThirdParties[exp].indexOf(inv.fk_soc) !== -1
+            ).reduce(
+              (total, inv) => {
+                return total + inv.total_ht;
+              }, 0)
+            );
+        })
+
+      // for verification
+      const totalStructureExpenses = Object.values(strutureExpensesDetails).reduce((total, current) => {
+        return total + current;
+      }, 0);
+
+      if (reelTotalStructureExpenses !== totalStructureExpenses) {
+        console.error(`Something is missing in the ids of the expenses; real total expenses : ${reelTotalStructureExpenses} is different from the sum of all expenses : ${totalStructureExpenses} 🦊`)
+      }
 
       const stats = {
           projectsIncome: {
@@ -174,29 +211,7 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
               },
               expenses: {
                 reelTotal: reelTotalStructureExpenses,
-                detail: {
-                  banque: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.banque).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                  maif: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.maif).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                  hd: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.hd).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                  hdParis: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.hdParis).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                  communication: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.communication).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                  visio: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.visio).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                  coworking: Math.trunc(expensesStructure.filter(inv => inv.fk_soc === structureThirdParties.coworking).reduce((total, inv) => {
-                      return total + inv.total_ht;
-                  }, 0)),
-                }
+                detail: strutureExpensesDetails
               },
               taxes: Math.trunc(taxes),
               realTreasury : Math.trunc(celluleIncomePaid - reelTotalStructureExpenses - taxes + ret[(year-1)].structure.realTreasury)

@@ -2,6 +2,7 @@ import {projectApiInterface} from "../interfaces/project.interface";
 
 export class ProjectEntity {
   id: string
+  title: string
   creation_year: number
   date_c: number
   date_m: number
@@ -11,6 +12,7 @@ export class ProjectEntity {
   opp_amount: null
   opp_percent: string
   opp_status: string
+  socid: string // third partie id (client)
   array_options: {
     options_pourcentcapitaine: string,
     options_pourcentmarquehd: string,
@@ -20,6 +22,9 @@ export class ProjectEntity {
   constructor(object: projectApiInterface) {
     if ('id' in object) {
       this.id = object.id;
+    }
+    if ('title' in object) {
+      this.title = object.title;
     }
     if ('date_c' in object) {
       this.date_c = object.date_c;
@@ -45,6 +50,9 @@ export class ProjectEntity {
     }
     if ('opp_status' in object) {
       this.opp_status = object.opp_status;
+    }
+    if ('socid' in object) {
+      this.socid = object.socid;
     }
     if ('array_options' in object) {
       this.array_options = object.array_options;

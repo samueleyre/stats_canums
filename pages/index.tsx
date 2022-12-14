@@ -154,10 +154,10 @@ export default class Home extends Component<{}, {year: number, allStatsInYear: m
             </div>
 
             {
-              allStatsInYear.structure.expenses.detail.coworking ?
+              allStatsInYear.structure.expenses.detail.bureau ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Bureaux</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.coworking}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.bureau}</p>
                 </div> : ""
             }
             {
@@ -168,17 +168,17 @@ export default class Home extends Component<{}, {year: number, allStatsInYear: m
                 </div> : ""
             }
             {
-              allStatsInYear.structure.expenses.detail.maif ?
+              allStatsInYear.structure.expenses.detail.assurance ?
                 <div className={styles.stat}>
                   <p className={styles.statTitle}>Assurance</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.maif}</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.assurance}</p>
                 </div> : ""
             }
             {
-              allStatsInYear.structure.expenses.detail.visio ?
+              allStatsInYear.structure.expenses.detail.outils_numeriques ?
                 <div className={styles.stat}>
-                  <p className={styles.statTitle}>Outil de visio</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.visio}</p>
+                  <p className={styles.statTitle}>Outils numériques</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.outils_numeriques}</p>
                 </div> : ""
             }
             {
@@ -189,10 +189,45 @@ export default class Home extends Component<{}, {year: number, allStatsInYear: m
                 </div> : ""
             }
             {
-              allStatsInYear.structure.expenses.detail.coworking ?
+              allStatsInYear.structure.expenses.detail.materiel ?
                 <div className={styles.stat}>
-                  <p className={styles.statTitle}>Bureaux</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.coworking}</p>
+                  <p className={styles.statTitle}>Matériel</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.materiel}</p>
+                </div> : ""
+            }
+            {
+              allStatsInYear.structure.expenses.detail.restauration ?
+                <div className={styles.stat}>
+                  <p className={styles.statTitle}>Restauration</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.restauration}</p>
+                </div> : ""
+            }
+            {
+              allStatsInYear.structure.expenses.detail.team_building ?
+                <div className={styles.stat}>
+                  <p className={styles.statTitle}>Team building</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.team_building}</p>
+                </div> : ""
+            }
+            {
+              allStatsInYear.structure.expenses.detail.facilitation ?
+                <div className={styles.stat}>
+                  <p className={styles.statTitle}>Facilitation</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.facilitation}</p>
+                </div> : ""
+            }
+            {
+              allStatsInYear.structure.expenses.detail.trading ?
+                <div className={styles.stat}>
+                  <p className={styles.statTitle}>Trading</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.trading}</p>
+                </div> : ""
+            }
+            {
+              allStatsInYear.structure.expenses.detail.conseil ?
+                <div className={styles.stat}>
+                  <p className={styles.statTitle}>Conseil</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.conseil}</p>
                 </div> : ""
             }
           </div>

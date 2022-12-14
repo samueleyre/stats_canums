@@ -1,6 +1,8 @@
 export interface supplierInvoiceApiInterface {
   id: string
+  creation_year: number
   fk_soc: string
+  fk_project: string
   datec: number
   total_ht: string
   paid: "1" | "0"
