@@ -9,6 +9,8 @@ export class SupplierInvoiceEntity {
   total_ht: number
   paid: "1" | "0"
   statut: "0"|"1"|"2"|"3" // draft | unpaid | paid | cancelled
+  isFreelance?: boolean
+  clientId?: string
   thirdPartieTypentCode?: "TE_MEDIUM" | "TE_SMALL" | "TE_FREELANCE" | "TE_ADMIN" | "TE_OTHER"
 
   constructor(object: supplierInvoiceApiInterface) {

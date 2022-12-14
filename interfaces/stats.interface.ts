@@ -33,13 +33,17 @@ export interface moneyStatsInterface {
     expenses? : {
       reelTotal: number,
       detail: {
-        coworking: number
-        banque: number
-        hdParis: number
-        maif: number
-        communication: number
-        hd: number
-        visio: number
+        banque: number,
+        assurance: number,
+        communication: number,
+        outils_numeriques: number,
+        materiel: number,
+        restauration: number,
+        team_building: number,
+        facilitation: number,
+        bureau: number,
+        trading: number,
+        conseil: number
       }
     },
     taxes?: number,

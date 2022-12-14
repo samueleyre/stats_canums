@@ -70,7 +70,7 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
         }
 
         supInv.clientId = foundProjet.socid
-        supInv.isFreelance = foundProjet.array_options.options_pourcentcellule > 0 || foundProjet.socid !== null ? true : false
+        supInv.isFreelance = Number(foundProjet.array_options.options_pourcentcellule) > 0 || foundProjet.socid !== null ? true : false
 
         // if (!supInv.isFreelance) {
         //   console.log(` name of project: ${foundProjet.title} with id ${foundProjet.id} is freelance ${supInv.isFreelance} and with thirdpartie : ${foundThirdPartie.id} ${foundThirdPartie.name} ${foundThirdPartie.name_alias}`)
@@ -166,7 +166,7 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
         })
 
       // for verification
-      const totalStructureExpenses = Object.values(strutureExpensesDetails).reduce((total, current) => {
+      const totalStructureExpenses = Object.values(strutureExpensesDetails).reduce((total:number, current:number) => {
         return total + current;
       }, 0);
 
