@@ -69,9 +69,10 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
             console.error(`ThirdPartie of SupplierInvoice ${supInv.id} not found !! 🧨`)
         }
 
-        supInv.clientId = foundProjet.socid
+        supInv.clientId = foundProjet.socid // not used anymore
         supInv.isFreelance = Number(foundProjet.array_options.options_pourcentcellule) > 0 || foundProjet.socid !== null ? true : false
 
+        // log freelance invoices found : can be useful to debug errors in total income
         // if (!supInv.isFreelance) {
         //   console.log(` name of project: ${foundProjet.title} with id ${foundProjet.id} is freelance ${supInv.isFreelance} and with thirdpartie : ${foundThirdPartie.id} ${foundThirdPartie.name} ${foundThirdPartie.name_alias}`)
         // }
@@ -105,8 +106,6 @@ export async function getStats(): Promise<{[key: number]: moneyStatsInterface}> 
       // stats
       const countFreelanceSupplierInvoices = freelanceSupplierInvoices.length;
       const countFreelanceWithSupplierInvoices = freelanceSupplierInvoices.map(sinv => sinv.fk_soc).filter((fk_soc, ind, arr) => arr.indexOf(fk_soc) === ind).length;
-
-      console.log(freelanceSupplierInvoices.map(sinv => sinv.fk_soc).filter((fk_soc, ind, arr) => arr.indexOf(fk_soc) === ind))
 
       // reel expense : total of supplier invoices linked to project with no percent to structure
       const reelTotalStructureExpenses = expensesStructure.reduce((total, inv) => {
