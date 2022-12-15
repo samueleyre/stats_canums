@@ -36,13 +36,12 @@ export const structureExpensesThirdParties = {
   "assurance" : [structureThirdParties.maif],
   "communication" : [structureThirdParties.communication_caroline],
   "outils_numeriques" : [structureThirdParties.serveurs_gandi, structureThirdParties.serveurs_gandi, structureThirdParties.serveurs_weedo, structureThirdParties.serveurs_coreus, structureThirdParties.visio_zoom],
-  "materiel" : [structureThirdParties.amazon, structureThirdParties.materiel, structureThirdParties.pro_jex, structureThirdParties.shenzhenshij_achatenligne],
+  "materiel" : [structureThirdParties.amazon, structureThirdParties.materiel, structureThirdParties.pro_jex, structureThirdParties.shenzhenshij_achatenligne, structureThirdParties.trading],
   "restauration" : [structureThirdParties.restauration],
   "team_building" : [structureThirdParties.wakeup_escapegame],
   "facilitation" : [structureThirdParties.cacao_tricart],
   "bureau" : [structureThirdParties.coworking],
-  "trading" : [structureThirdParties.trading],
-  "conseil": [structureThirdParties.veolys]
+  "comptable": [structureThirdParties.veolys]
 }
 
 export const structureThirdPartiesIds = Object.values(structureThirdParties);

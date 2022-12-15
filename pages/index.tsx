@@ -217,17 +217,10 @@ export default class Home extends Component<{}, {year: number, allStatsInYear: m
                 </div> : ""
             }
             {
-              allStatsInYear.structure.expenses.detail.trading ?
+              allStatsInYear.structure.expenses.detail.comptable ?
                 <div className={styles.stat}>
-                  <p className={styles.statTitle}>Trading</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.trading}</p>
-                </div> : ""
-            }
-            {
-              allStatsInYear.structure.expenses.detail.conseil ?
-                <div className={styles.stat}>
-                  <p className={styles.statTitle}>Conseil</p>
-                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.conseil}</p>
+                  <p className={styles.statTitle}>Comptabilité</p>
+                  <p className={styles.statNumber}>{allStatsInYear.structure.expenses.detail.comptable}</p>
                 </div> : ""
             }
           </div>

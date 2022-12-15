@@ -42,8 +42,7 @@ export interface moneyStatsInterface {
         team_building: number,
         facilitation: number,
         bureau: number,
-        trading: number,
-        conseil: number
+        comptable: number
       }
     },
     taxes?: number,
